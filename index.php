@@ -17,7 +17,7 @@ $OUTPUT->welcomeUserCourse();
 if ( ! $LTI->user->instructor ) {
    echo('<p><i class="fa fa-trophy"></i>');
    echo(' You earned a trophy!</p>');
-   $RESULT->gradeSend(0.95, false);
+   $LTI->result->gradeSend(0.95, false);
 }
 
 $OUTPUT->footer();
