@@ -15,6 +15,7 @@ $REGISTER_LTI2 = array(
     "analytics" => array(
         "internal"
     ),
+    "tool_phase" => "fun",
     "source_url" => "https://github.com/tsugitools/youtube",
     // For now Tsugi tools delegate this to /lti/store
     "placements" => array(
