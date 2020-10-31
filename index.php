@@ -21,8 +21,15 @@ if ( $LTI->user->instructor ) {
     echo("<pre>\n");var_dump($LTI->ltiParameterArray());echo("</pre>\n");
 } else {
    echo('<center><i class="fa fa-trophy fa-5x" style="color: blue;"></i>');
-   echo('<br/>You earned a trophy!</center>');
+   echo('<br/>You earned a trophy!<br/>');
    $LTI->result->gradeSend(0.95, false);
+   $lastSendTransport = $LTI->result->lastSendTransport;
+   if ( $lastSendTransport ) {
+       echo('And your grade was sent using '.htmlentities($lastSendTransport).'<br>');
+    } else {
+        echo('And your grade was stored locally<br>');
+    }
+    echo("\n</center>\n");
 }
 
 
