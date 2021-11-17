@@ -2,6 +2,7 @@
 // https://github.com/tsugiproject/trophy
 require_once "../config.php";
 
+use \Tsugi\Util\LTI13;
 use \Tsugi\Core\LTIX;
 
 // Handle all forms of launch
@@ -22,7 +23,9 @@ if ( $LTI->user->instructor ) {
 } else {
    echo('<center><i class="fa fa-trophy fa-5x" style="color: blue;"></i>');
    echo('<br/>You earned a trophy!<br/>');
-   $LTI->result->gradeSend(0.95, false);
+   $debug_log = false;
+   $extra = array(LTI13::LINEITEM_COMMENT => "Trophy time");
+   $LTI->result->gradeSend(0.95, false, $debug_log, $extra);
    $lastSendTransport = $LTI->result->lastSendTransport;
    if ( $lastSendTransport ) {
        echo('And your grade was sent using '.htmlentities($lastSendTransport).'<br>');
