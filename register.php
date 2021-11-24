@@ -4,8 +4,7 @@ $REGISTER_LTI = array(
 "name" => "Trophy",
 "FontAwesome" => "fa-trophy",
 "short_name" => "Trophy",
-"description" => "This tool gives students a grade of 0.95 for a launch.
-",
+"description" => "This tool lets the student pick their grade.",
     "messages" => array("launch", "launch_grade"),
     "privacy_level" => "anonymous",  // anonymous, name_only, public
     "license" => "Apache",
