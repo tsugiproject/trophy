@@ -39,7 +39,7 @@ $OUTPUT->welcomeUserCourse();
 
 if ( $LTI->user->instructor ) {
     echo("<p>Instructors can't send grades with LTI so here is a LAUNCH dump</p>\n");
-    echo("<pre>\n");
+    echo('<pre>'."\n");
     echo(htmlentities(Output::safe_var_dump($LTI)));
     echo("</pre>\n");
     echo("<p>All the 'cooked' LTI parameters</p>\n");
@@ -64,10 +64,21 @@ if ( $sent ) {
         echo('And your grade was stored locally<br>');
     }
     echo("\n</center>\n");
-    echo("<p>Debug log:</p>");
-    echo("<pre>\n");
+    echo('<button id="toggle">Toggle Debug Log</button>'."\n");
+    echo('<pre id="detail" style="display:none;">'."\n");
     echo(htmlentities(Output::safe_var_dump($debug_log)));
     echo("</pre>\n");
 }
 
-$OUTPUT->footer();
+$OUTPUT->footerStart();
+?>
+<script>
+$(document).ready(function() {
+   $("#toggle").click(function(){
+       $("#detail").toggle();
+   });
+});
+</script>
+<?php
+
+$OUTPUT->footerEnd();
