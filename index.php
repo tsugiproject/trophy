@@ -11,14 +11,16 @@ use \Tsugi\UI\Output;
 $LTI = LTIX::requireData();
 
 $grade = U::get($_POST, 'grade');
+$comment = U::get($_POST, 'comment');
 
-if ( is_string($grade) ) {
-   $extra = array(LTI13::LINEITEM_COMMENT => "Trophy time");
+if ( count($_POST) > 0 && is_string($grade) ) {
+   $extra = array(LTI13::LINEITEM_COMMENT => $comment);
    $debug_log = array();
    $LTI->result->gradeSend($grade, false, $debug_log, $extra);
    $lastSendTransport = $LTI->result->lastSendTransport;
    $_SESSION['sent'] = true;
    $_SESSION['grade'] = $grade;
+   $_SESSION['comment'] = $comment;
    $_SESSION['transport'] = $lastSendTransport;
    $_SESSION['debug_log'] = $debug_log;
    header("Location: ".addSession("index.php"));
@@ -27,6 +29,7 @@ if ( is_string($grade) ) {
 
 $sent = U::get($_SESSION, 'sent');
 $grade = U::get($_SESSION, 'grade', 0.95);
+$comment = U::get($_SESSION, 'comment', '');
 $lastSendTransport = U::get($_SESSION, 'transport');
 $debug_log = U::get($_SESSION, 'debug_log');
 
@@ -50,7 +53,9 @@ if ( $LTI->user->instructor ) {
 ?>
 <form method="post">
 <input type="text" name="grade"
-value=" <?= $grade ?>"/>
+value=" <?= $grade ?>"/> Grade<br/>
+<input type="text" name="comment"
+value=" <?= $comment ?>"/> Comment</br/>
 <input type="submit">
 </form>
 <?php
