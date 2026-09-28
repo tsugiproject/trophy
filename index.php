@@ -100,13 +100,20 @@ function gradeInputError($grade, $gradingProgress, $activityProgress)
         LTI13::ACTIVITY_PROGRESS_SUBMITTED,
         LTI13::ACTIVITY_PROGRESS_COMPLETED,
     );
-    if ( is_string($gradingProgress) && $gradingProgress !== '' && ! in_array($gradingProgress, $grading, true) ) {
+    if ( ! optionalProgressOk($gradingProgress, $grading) ) {
         return 'Grading progress is not a recognized value.';
     }
-    if ( is_string($activityProgress) && $activityProgress !== '' && ! in_array($activityProgress, $activity, true) ) {
+    if ( ! optionalProgressOk($activityProgress, $activity) ) {
         return 'Activity progress is not a recognized value.';
     }
     return null;
+}
+function optionalProgressOk($value, $allowed)
+{
+    if ( $value === null || $value === false || $value === '' ) {
+        return true;
+    }
+    return is_string($value) && in_array($value, $allowed, true);
 }
 function doOption($option, $current)
 {
