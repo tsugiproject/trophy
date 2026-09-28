@@ -6,6 +6,7 @@ use \Tsugi\Util\U;
 use \Tsugi\Util\LTI13;
 use \Tsugi\Core\LTIX;
 use \Tsugi\Core\ReqScope;
+use \Tsugi\Controllers\Tool;
 use \Tsugi\UI\Output;
 
 // Handle all forms of launch
@@ -20,12 +21,25 @@ $gradingProgress = U::get($_POST, LTI13::GRADING_PROGRESS);
 $activityProgress = U::get($_POST, LTI13::ACTIVITY_PROGRESS);
 
 if ( count($_POST) > 0 && is_string($grade) ) {
+   if ( Tool::csrfRedirect(addSession('index.php')) ) {
+       return;
+   }
    $debug_log = array();
-   $extra = array(LTI13::LINEITEM_COMMENT => $comment);
-   if ( $activityProgress ) $extra[LTI13::ACTIVITY_PROGRESS] = $activityProgress;
-   if ( $gradingProgress ) $extra[LTI13::GRADING_PROGRESS] = $gradingProgress;
-   $LTI->result->gradeSend($grade, false, $debug_log, $extra);
-   $lastSendTransport = $LTI->result->lastSendTransport;
+   $lastSendTransport = null;
+   $status = gradeInputError($grade, $gradingProgress, $activityProgress);
+   if ( $status === null && ! $LTI->result ) {
+       $status = 'There is no result to send a grade for.';
+   }
+   if ( $status === null ) {
+       $extra = array();
+       if ( is_string($comment) ) {
+           $extra[LTI13::LINEITEM_COMMENT] = $comment;
+       }
+       if ( $activityProgress ) $extra[LTI13::ACTIVITY_PROGRESS] = $activityProgress;
+       if ( $gradingProgress ) $extra[LTI13::GRADING_PROGRESS] = $gradingProgress;
+       $status = $LTI->result->gradeSend($grade, false, $debug_log, $extra);
+       $lastSendTransport = $LTI->result->lastSendTransport;
+   }
    $_SESSION['sent'] = true;
    $_SESSION['grade'] = $grade;
    $_SESSION['comment'] = $comment;
@@ -33,6 +47,7 @@ if ( count($_POST) > 0 && is_string($grade) ) {
    $_SESSION[LTI13::ACTIVITY_PROGRESS] = $activityProgress;
    $_SESSION['transport'] = $lastSendTransport;
    $_SESSION['debug_log'] = $debug_log;
+   $_SESSION['status'] = $status;
    header("Location: ".addSession("index.php"));
    return;
 }
@@ -42,6 +57,7 @@ $grade = U::get($_SESSION, 'grade', 0.95);
 $comment = U::get($_SESSION, 'comment', '');
 $lastSendTransport = U::get($_SESSION, 'transport');
 $debug_log = U::get($_SESSION, 'debug_log');
+$status = U::get($_SESSION, 'status');
 $gradingProgress = U::get($_SESSION, LTI13::GRADING_PROGRESS);
 $activityProgress = U::get($_SESSION, LTI13::ACTIVITY_PROGRESS);
 
@@ -49,6 +65,7 @@ $activityProgress = U::get($_SESSION, LTI13::ACTIVITY_PROGRESS);
 $OUTPUT->header();
 $OUTPUT->bodyStart();
 $OUTPUT->topNav();
+$OUTPUT->flashMessages();
 
 $OUTPUT->welcomeUserCourse();
 
@@ -64,6 +81,33 @@ if ( $LTI->user->instructor ) {
 }
 // $gradingProgress = U::get($_SESSION, LTI13::GRADING_PROGRESS);
 // $activityProgress = U::get($_SESSION, LTI13::ACTIVITY_PROGRESS);
+function gradeInputError($grade, $gradingProgress, $activityProgress)
+{
+    if ( ! is_numeric($grade) || (float) $grade < 0.0 || (float) $grade > 1.0 ) {
+        return 'Grade must be between 0.0 and 1.0.';
+    }
+    $grading = array(
+        LTI13::GRADING_PROGRESS_FULLYGRADED,
+        LTI13::GRADING_PROGRESS_PENDING,
+        LTI13::GRADING_PROGRESS_PENDINGMANUAL,
+        LTI13::GRADING_PROGRESS_FAILED,
+        LTI13::GRADING_PROGRESS_NOTREADY,
+    );
+    $activity = array(
+        LTI13::ACTIVITY_PROGRESS_INITIALIZED,
+        LTI13::ACTIVITY_PROGRESS_STARTED,
+        LTI13::ACTIVITY_PROGRESS_INPROGRESS,
+        LTI13::ACTIVITY_PROGRESS_SUBMITTED,
+        LTI13::ACTIVITY_PROGRESS_COMPLETED,
+    );
+    if ( is_string($gradingProgress) && $gradingProgress !== '' && ! in_array($gradingProgress, $grading, true) ) {
+        return 'Grading progress is not a recognized value.';
+    }
+    if ( is_string($activityProgress) && $activityProgress !== '' && ! in_array($activityProgress, $activity, true) ) {
+        return 'Activity progress is not a recognized value.';
+    }
+    return null;
+}
 function doOption($option, $current)
 {
     echo('<option value="'.$option.'"');
@@ -72,6 +116,7 @@ function doOption($option, $current)
 }
 ?>
 <form method="post">
+<?php echo(Tool::csrfField()."\n"); ?>
 <input type="text" name="grade"
 value=" <?= $grade ?>"/> Grade<br/>
 <input type="text" name="comment"
@@ -106,7 +151,9 @@ if ( $scope && $scope->lti11 ) {
 </form>
 <?php
 
-if ( $sent ) {
+if ( $sent && is_string($status) ) {
+    echo("<p>Grade send failed. ".htmlspecialchars($status)."</p>\n");
+} else if ( $sent ) {
    echo('<center><i class="fa fa-trophy fa-5x" style="color: blue;"></i>');
    echo('<br/>You earned a trophy!<br/>');
    if ( $lastSendTransport ) {
@@ -115,6 +162,8 @@ if ( $sent ) {
         echo('And your grade was stored locally<br>');
     }
     echo("\n</center>\n");
+}
+if ( $sent ) {
     echo('<button id="toggle">Toggle Debug Log</button>'."\n");
     echo('<pre id="detail" style="display:none;">'."\n");
     echo(htmlentities(Output::safe_var_dump($debug_log)));
