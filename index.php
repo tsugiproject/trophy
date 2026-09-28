@@ -5,6 +5,7 @@ require_once "../config.php";
 use \Tsugi\Util\U;
 use \Tsugi\Util\LTI13;
 use \Tsugi\Core\LTIX;
+use \Tsugi\Core\ReqScope;
 use \Tsugi\UI\Output;
 
 // Handle all forms of launch
@@ -21,8 +22,8 @@ $activityProgress = U::get($_POST, LTI13::ACTIVITY_PROGRESS);
 if ( count($_POST) > 0 && is_string($grade) ) {
    $debug_log = array();
    $extra = array(LTI13::LINEITEM_COMMENT => $comment);
-   if ( $LTI->isLTI13() && $activityProgress ) $extra[LTI13::ACTIVITY_PROGRESS] = $activityProgress;
-   if ( $LTI->isLTI13() && $gradingProgress ) $extra[LTI13::GRADING_PROGRESS] = $gradingProgress;
+   if ( $activityProgress ) $extra[LTI13::ACTIVITY_PROGRESS] = $activityProgress;
+   if ( $gradingProgress ) $extra[LTI13::GRADING_PROGRESS] = $gradingProgress;
    $LTI->result->gradeSend($grade, false, $debug_log, $extra);
    $lastSendTransport = $LTI->result->lastSendTransport;
    $_SESSION['sent'] = true;
@@ -75,7 +76,6 @@ function doOption($option, $current)
 value=" <?= $grade ?>"/> Grade<br/>
 <input type="text" name="comment"
 value=" <?= $comment ?>"/> Comment</br/>
-<?php if ( $LTI->isLTI13() ) { ?>
 <select name="<?= LTI13::GRADING_PROGRESS ?>">
 <option value="">-- select <?= LTI13::GRADING_PROGRESS ?> (optional)---</option>
 <?php
@@ -96,7 +96,12 @@ doOption(LTI13::ACTIVITY_PROGRESS_SUBMITTED, $activityProgress);
 doOption(LTI13::ACTIVITY_PROGRESS_COMPLETED, $activityProgress);
 ?>
 </select><br/>
-<?php } ?>
+<?php
+$scope = ReqScope::current();
+if ( $scope && $scope->lti11 ) {
+    echo("<p>Grading progress and activity progress will not be sent back to the server because this is an LTI 1.1 launch, but they will be stored locally.</p>\n");
+}
+?>
 <input type="submit">
 </form>
 <?php
